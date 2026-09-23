@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat IA Multimodal - Painel</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; }
+    .card { background: #1e293b; width: 100%; max-width: 650px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); display: flex; flex-direction: column; height: 85vh; overflow: hidden; }
+    
+    .header { padding: 16px 20px; background: #0f172a; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.1rem; font-weight: 600; }
+    .status-badge { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; padding: 4px 10px; border-radius: 9999px; background: #334155; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #94a3b8; }
+
+    .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+    .msg { max-width: 85%; padding: 12px 16px; border-radius: 10px; font-size: 0.95rem; line-height: 1.5; }
+    .msg.user { background: #2563eb; align-self: flex-end; color: #fff; }
+    .msg.bot { background: #334155; align-self: flex-start; color: #f8fafc; }
+    .msg img { max-width: 100%; border-radius: 8px; margin-top: 8px; display: block; border: 1px solid rgba(255,255,255,0.1); }
+    .msg.bot ul, .msg.bot ol { margin-left: 20px; margin-top: 6px; }
+    .msg.bot p { margin-bottom: 6px; }
+    .msg.bot p:last-child { margin-bottom: 0; }
+    
+    .input-area { padding: 16px; background: #0f172a; border-top: 1px solid #334155; display: flex; flex-direction: column; gap: 10px; }
+    .mode-bar { display: flex; gap: 10px; align-items: center; }
+    .toggle-btn { background: #334155; color: #94a3b8; border: 1px solid #475569; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+    .toggle-btn.active { background: #2563eb; color: #ffffff; border-color: #3b82f6; font-weight: 600; }
+    
+    .file-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #94a3b8; }
+    .file-input { display: none; }
+    .file-btn { background: #334155; color: #f8fafc; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+    .file-btn:hover { background: #475569; }
+    
+    .text-row { display: flex; gap: 10px; }
+    .text-input { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; outline: none; }
+    .text-input:focus { border-color: #3b82f6; }
+    .send-btn { background: #2563eb; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .send-btn:hover { background: #1d4ed8; }
+    .send-btn:disabled { background: #475569; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="header">
+      <h1>Assistente IA Multimodal & RAG</h1>
+      <div class="status-badge">
+        <span id="luz-status" class="status-dot"></span>
+        <span id="texto-status">Verificando API...</span>
+      </div>
+    </div>
+
+    <div class="chat-box" id="chatBox">
+      <div class="msg bot">
+        Olá! Envie uma pergunta, anexe uma imagem para análise visual ou ative o modo documento para analisar um arquivo PDF.
+      </div>
+    </div>
+
+    <form class="input-area" id="chatForm">
+      <div class="mode-bar">
+        <button type="button" class="toggle-btn" id="btnToggleDoc">📄 Conversar com Documento: Desativado</button>
+      </div>
+
+      <div class="file-row" id="areaImagem">
+        <label for="imagemUpload" class="file-btn">📎 Anexar Imagem</label>
+        <input type="file" id="imagemUpload" class="file-input" accept="image/*">
+        <span id="nomeArquivo">Nenhuma imagem anexada</span>
+      </div>
+
+      <div class="file-row" id="areaDoc" style="display: none;">
+        <label for="docUpload" class="file-btn">📑 Selecionar PDF/TXT</label>
+        <input type="file" id="docUpload" class="file-input" accept=".pdf, .txt">
+        <span id="nomeDoc">Nenhum documento anexado</span>
+      </div>
+
+      <div class="text-row">
+        <input type="text" id="campoPrompt" class="text-input" placeholder="Digite sua mensagem..." required>
+        <button type="submit" class="send-btn" id="btnEnviar">Enviar</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const luz = document.getElementById('luz-status');
+    const textoStatus = document.getElementById('texto-status');
+    const chatBox = document.getElementById('chatBox');
+    const chatForm = document.getElementById('chatForm');
+    const campoPrompt = document.getElementById('campoPrompt');
+    const btnEnviar = document.getElementById('btnEnviar');
+
+    const imagemUpload = document.getElementById('imagemUpload');
+    const nomeArquivo = document.getElementById('nomeArquivo');
+    const docUpload = document.getElementById('docUpload');
+    const nomeDoc = document.getElementById('nomeDoc');
+
+    const btnToggleDoc = document.getElementById('btnToggleDoc');
+    const areaImagem = document.getElementById('areaImagem');
+    const areaDoc = document.getElementById('areaDoc');
+
+    let modoDocumento = false;
+
+    btnToggleDoc.addEventListener('click', () => {
+      modoDocumento = !modoDocumento;
+      if (modoDocumento) {
+        btnToggleDoc.classList.add('active');
+        btnToggleDoc.innerText = '📄 Conversar com Documento: Ativado';
+        areaDoc.style.display = 'flex';
+        areaImagem.style.display = 'none';
+        imagemUpload.value = '';
+        nomeArquivo.innerText = 'Nenhuma imagem anexada';
+      } else {
+        btnToggleDoc.classList.remove('active');
+        btnToggleDoc.innerText = '📄 Conversar com Documento: Desativado';
+        areaDoc.style.display = 'none';
+        areaImagem.style.display = 'flex';
+        docUpload.value = '';
+        nomeDoc.innerText = 'Nenhum documento anexado';
+      }
+    });
+
+    imagemUpload.addEventListener('change', () => {
+      nomeArquivo.innerText = imagemUpload.files[0] ? imagemUpload.files[0].name : 'Nenhuma imagem anexada';
+    });
+
+    docUpload.addEventListener('change', () => {
+      nomeDoc.innerText = docUpload.files[0] ? docUpload.files[0].name : 'Nenhum documento anexado';
+    });
+
+    async function verificarSaude() {
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        if (res.ok && data.bancoDeDados === 'conectado') {
+          luz.style.backgroundColor = '#22c55e';
+          textoStatus.innerText = 'Sistema Operacional';
+          textoStatus.style.color = '#4ade80';
+        } else {
+          luz.style.backgroundColor = '#ef4444';
+          textoStatus.innerText = 'Banco Desconectado';
+          textoStatus.style.color = '#f87171';
+        }
+      } catch (err) {
+        luz.style.backgroundColor = '#ef4444';
+        textoStatus.innerText = 'API Offline';
+        textoStatus.style.color = '#f87171';
+      }
+    }
+    verificarSaude();
+    setInterval(verificarSaude, 30000);
+
+    function adicionarMensagem(texto, tipo, urlImagem = null) {
+      const div = document.createElement('div');
+      div.className = `msg ${tipo}`;
+      let html = '';
+      if (tipo === 'bot') {
+        html = marked.parse(texto);
+      } else {
+        html = `<p>${texto}</p>`;
+      }
+      if (urlImagem) {
+        html += `<img src="${urlImagem}" alt="Imagem" />`;
+      }
+      div.innerHTML = html;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const prompt = campoPrompt.value.trim();
+      const token = localStorage.getItem('token') || '';
+
+      if (!prompt) return;
+
+      adicionarMensagem(prompt, 'user');
+      campoPrompt.value = '';
+      btnEnviar.disabled = true;
+      btnEnviar.innerText = '...';
+
+      try {
+        let respostaTexto = '';
+        let urlImagem = null;
+
+        if (modoDocumento) {
+          const arquivoDoc = docUpload.files[0];
+          if (!arquivoDoc) {
+            adicionarMensagem('Selecione um arquivo PDF ou TXT para enviar.', 'bot');
+            btnEnviar.disabled = false;
+            btnEnviar.innerText = 'Enviar';
+            return;
+          }
+
+          const formData = new FormData();
+          formData.append('pergunta', prompt);
+          formData.append('arquivo', arquivoDoc);
+
+          const res = await fetch('/api/chat/documento', {
+            method: 'POST',
+            headers: {
+              ...(token && { 'Authorization': `Bearer ${token}` })
+            },
+            body: formData
+          });
+
+          if (res.status === 401) {
+            adicionarMensagem('Erro 401: Token JWT não informado ou inválido. Faça login.', 'bot');
+            return;
+          }
+
+          const data = await res.json();
+          respostaTexto = data.resposta || data.erro || 'Sem resposta do servidor.';
+          
+          docUpload.value = '';
+          nomeDoc.innerText = 'Nenhum documento anexado';
+
+        } else if (imagemUpload.files[0]) {
+          const arquivoImg = imagemUpload.files[0];
+          const formData = new FormData();
+          formData.append('prompt', prompt);
+          formData.append('imagem', arquivoImg);
+
+          const res = await fetch('/api/chat/vision', {
+            method: 'POST',
+            headers: {
+              ...(token && { 'Authorization': `Bearer ${token}` })
+            },
+            body: formData
+          });
+
+          const data = await res.json();
+          respostaTexto = data.resposta || data.error || 'Sem resposta.';
+          urlImagem = data.imagemUrl;
+          
+          imagemUpload.value = '';
+          nomeArquivo.innerText = 'Nenhuma imagem anexada';
+
+        } else {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` })
+            },
+            body: JSON.stringify({ prompt: prompt })
+          });
+          const data = await res.json();
+          respostaTexto = data.resposta || data.error || 'Sem resposta.';
+        }
+
+        adicionarMensagem(respostaTexto, 'bot', urlImagem);
+
+      } catch (err) {
+        adicionarMensagem('Erro de conexão ao comunicar com a API.', 'bot');
+      } finally {
+        btnEnviar.disabled = false;
+        btnEnviar.innerText = 'Enviar';
+      }
+    });
+  </script>
+</body>
+</html>
