@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat IA Multimodal - Painel</title>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; }
@@ -101,6 +102,27 @@
     const areaDoc = document.getElementById('areaDoc');
 
     let modoDocumento = false;
+    const tokenSocket = localStorage.getItem('token') || '';
+
+const socket = io({
+  auth: { token: tokenSocket }
+});
+
+socket.on('connect', () => {
+  console.log('Socket.io conectado:', socket.id);
+});
+
+socket.on('connect_error', (erro) => {
+  console.error('Erro no Socket.io:', erro.message);
+});
+
+socket.on('mensagemRecebida', (mensagem) => {
+  adicionarMensagem(`${mensagem.autor}: ${mensagem.texto}`, 'bot');
+});
+
+socket.on('erroMensagem', (dados) => {
+  adicionarMensagem(dados.erro, 'bot');
+});
 
     btnToggleDoc.addEventListener('click', () => {
       modoDocumento = !modoDocumento;
