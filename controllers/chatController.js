@@ -1,6 +1,6 @@
 const cloudinary = require('cloudinary').v2;
 const { GoogleGenAI } = require('@google/genai');
-const Mensagem = require('../models/Mensagem');
+const Mensagem = require('../models/Mensagens');
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -38,7 +38,8 @@ exports.salvarMensagem = async (req, res) => {
 
         const novaMensagem = new Mensagem({
             autor: nomeDoUsuarioLogado,
-            texto: texto
+            texto: texto,
+            tokensGastos: 0
         });
 
         await novaMensagem.save();
@@ -109,16 +110,19 @@ exports.enviarMensagemVision = async (req, res) => {
 
         const respostaIA = response.text || 'Sem resposta gerada.';
 
+        const tokens = response.usageMetadata?.totalTokenCount || 0;
+
         const novaMensagem = await Mensagem.create({
-            usuarioId: req.usuario.id,
-            pergunta: prompt,
-            resposta: respostaIA,
-            imagemUrl: imagemUrl
+            autor: req.usuario.nome,
+            texto: `Pergunta: ${prompt || 'Analise esta imagem'}\nResposta: ${respostaIA}`,
+            imagemUrl: imagemUrl,
+            tokensGastos: tokens
         });
 
         return res.status(200).json({
             resposta: respostaIA,
             imagemUrl: imagemUrl,
+            tokensGastos: tokens,
             mensagem: novaMensagem
         });
 
