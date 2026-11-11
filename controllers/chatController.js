@@ -15,9 +15,7 @@ const ai = new GoogleGenAI({
 const uploadParaCloudinary = (buffer) => {
     return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-            {
-                folder: 'chat_ia'
-            },
+            { folder: 'chat_ia' },
             (error, result) => {
                 if (error) {
                     return reject(error);
@@ -85,7 +83,6 @@ exports.enviarMensagemVision = async (req, res) => {
         }
 
         const imagemUrl = await uploadParaCloudinary(file.buffer);
-
         const imagemBase64 = file.buffer.toString('base64');
 
         const response = await ai.models.generateContent({
@@ -110,7 +107,9 @@ exports.enviarMensagemVision = async (req, res) => {
 
         const respostaIA = response.text || 'Sem resposta gerada.';
 
-        const tokens = response.usageMetadata?.totalTokenCount || 0;
+        const tokens = Number(
+            response.usageMetadata?.totalTokenCount ?? 0
+        );
 
         const novaMensagem = await Mensagem.create({
             autor: req.usuario.nome,
