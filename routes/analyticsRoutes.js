@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-
-const Mensagem = require('../models/Mensagens');
+const Mensagem = require('../models/Mensagem');
 const Usuario = require('../models/Usuario');
 
 const autenticarToken = require('../middlewares/authMiddleware');
