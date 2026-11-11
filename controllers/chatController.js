@@ -1,6 +1,6 @@
 const cloudinary = require('cloudinary').v2;
 const { GoogleGenAI } = require('@google/genai');
-const Mensagem = require('../models/Mensagens');
+const Mensagem = require('../models/Mensagem');
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
