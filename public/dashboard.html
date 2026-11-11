@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard Administrativo</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 30px;
+            color: #1e293b;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .indicadores {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card h3 {
+            color: #64748b;
+        }
+
+        .card p {
+            font-size: 30px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .grafico {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        button {
+            padding: 12px 20px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Centro de Comando</h1>
+    <p>Monitoramento da utilização da Inteligência Artificial</p>
+
+    <button onclick="carregarDashboard()">
+        Atualizar dados
+    </button>
+
+    <section class="indicadores">
+
+        <div class="card">
+            <h3>Total de Tokens</h3>
+            <p id="totalTokens">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Total de Mensagens</h3>
+            <p id="totalMensagens">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Total de Usuários</h3>
+            <p id="totalUsuarios">0</p>
+        </div>
+
+    </section>
+
+    <section class="grafico">
+        <h2>Estatísticas do Sistema</h2>
+
+        <canvas id="graficoTokens"></canvas>
+    </section>
+
+    <script src="dashboard.js"></script>
+
+</body>
+</html>
