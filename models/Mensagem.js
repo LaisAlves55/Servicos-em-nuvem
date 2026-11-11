@@ -16,6 +16,10 @@ const MensagemSchema = new mongoose.Schema({
     data: {
         type: Date,
         default: Date.now
+    },
+    tokensGastos: {
+        type: Number,
+        default: 0
     }
 });
 
